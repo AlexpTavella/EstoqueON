@@ -1,0 +1,10 @@
+Estoque
+
+eu tenho uma ideia de um site da qual ficaria as informações de estoque disponível da minha empresa da qual eu disponibilizaria para representantes, o que seria esse site, basicamente eu teria uma planilha do excel com determinado layout definido, e eu poderia fazer o upload nesse site, e ele criaria pra mim uma versão visual dessas informações no html, com visual bastante moderno e minimalista e responsivo para celular e computador que deixaria organizado o código do item, nome, saldo atual, saldo alocado para pedidos, saldo disponível, ao lado também informações como data de próxima produção/ mês e a quantidade a ser produzida nesse mês, sendo três messes depois do atual em que estamos, e logo abaixo informações de lotes disponíveis para esse item, ai passa para o próximo item com as mesmas informações, o site teria uma parte onde eu colocaria o upload da planilha, e a outra a parte visual dos dados
+
+veja, analise, entenda e monte um plano para iniciarmos a criação disso agora
+
+
+
+
+Tem alguma api ou comando via progress que edita o pedido cadastrado, caso tenha algo parecido ireamos testar ececutar assim que o pedido é enviado para checar se a natureza troca desse forama
