@@ -47,6 +47,25 @@ const upload = multer({
 });
 
 // ==============================
+// DEBUG UPLOAD (NOVO)
+// ==============================
+app.post("/upload-excel", upload.single("file"), (req, res) => {
+    console.log("Arquivo recebido:", req.file);
+
+    if (!req.file) {
+        return res.status(400).json({
+            sucesso: false,
+            mensagem: "Nenhum arquivo enviado"
+        });
+    }
+
+    res.json({
+        sucesso: true,
+        mensagem: "Arquivo atualizado com sucesso"
+    });
+});
+
+// ==============================
 // ROTA PARA BAIXAR EXCEL
 // ==============================
 app.get("/excel", (req, res) => {
