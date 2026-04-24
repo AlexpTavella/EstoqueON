@@ -344,3 +344,28 @@ function formatMonth(mes) {
         return mes;
     }
 }
+
+window.addEventListener("load", carregarExcelOnline);
+
+function carregarExcelOnline() {
+    fetch("/excel")
+        .then(res => res.arrayBuffer())
+        .then(data => {
+            const workbook = XLSX.read(data, { type: "array" });
+
+            const produtos = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUTOS"]);
+            const lotes = XLSX.utils.sheet_to_json(workbook.Sheets["LOTES"]);
+            const producao = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUCAO"]);
+
+            produtosGlobais = produtos.map(prod => ({
+                ...prod,
+                lotes: lotes.filter(l => l.codigo == prod.codigo),
+                producao: producao.filter(p => p.codigo == prod.codigo)
+            }));
+
+            aplicarFiltros();
+        })
+        .catch(() => {
+            console.log("Nenhum Excel disponível ainda");
+        });
+}
