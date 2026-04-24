@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Estoque</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
+</head>
+
+<body>
+
+<header class="header">
+    <div class="container header-content">
+
+            <img id="Logo" src="base/logo.png">
+
+        <div>
+            <label for="file-input" class="upload" style="display: none;">Importar</label>
+            <input type="file" id="file-input" class="file-input" style="display: none;">
+            <a class="upload" href="#">Voltar</a>
+        </div>
+
+    </div>
+</header>
+
+<main class="container">
+
+    <h2 id="Title">Consulta de estoque</h2>
+    <p id="Subtitle">Portal de disponibilidade</p>
+
+    <div class="top-bar">
+        <input type="text" class="search-input" placeholder="Buscar produto...">
+
+        <select class="filter-select">
+            <option value="todos">Todos</option>
+            <option value="com">Com saldo</option>
+            <option value="sem">Sem saldo</option>
+        </select>
+    </div>
+
+    <div class="products-grid"></div>
+
+</main>
+
+
+<script>
+    async function carregarExcelDoServidor() {
+        try {
+            const response = await fetch("/excel");
+            const blob = await response.blob();
+    
+            const reader = new FileReader();
+    
+            reader.onload = function (evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+    
+                // chama sua função já existente
+                const produtos = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUTOS"]);
+                const lotes = XLSX.utils.sheet_to_json(workbook.Sheets["LOTES"]);
+                const producao = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUCAO"]);
+    
+                produtosGlobais = produtos.map(prod => ({
+                    ...prod,
+                    lotes: lotes.filter(l => l.codigo == prod.codigo),
+                    producao: producao.filter(p => p.codigo == prod.codigo)
+                }));
+    
+                aplicarFiltros();
+            };
+    
+            reader.readAsArrayBuffer(blob);
+    
+        } catch (err) {
+            console.log("Nenhum arquivo disponível ainda.");
+        }
+    }
+    
+    // carrega ao abrir o site
+    carregarExcelDoServidor();
+    
+    // atualiza automaticamente a cada 30 segundos
+    setInterval(carregarExcelDoServidor, 30000);
+    </script>
+<script src="script.js"></script>
+
+</body>
+</html>
