@@ -1,31 +1,26 @@
-// ==============================
-// ELEMENTOS
-// ==============================
 const fileInput = document.getElementById("file-input");
 const productsGrid = document.querySelector(".products-grid");
 const searchInput = document.querySelector(".search-input");
 const filterSelect = document.querySelector(".filter-select");
 
-// ==============================
-// ESTADO
-// ==============================
+// 🔥 NOVO INPUT
+const loteSearchInput = document.querySelector(".lote-search-input");
+
 let produtosGlobais = [];
 
-// ==============================
-// EVENTOS INICIAIS
-// ==============================
 fileInput.addEventListener("change", handleFile);
 searchInput.addEventListener("input", aplicarFiltros);
 filterSelect.addEventListener("change", aplicarFiltros);
+
+// 🔥 NOVO EVENTO
+if (loteSearchInput) {
+    loteSearchInput.addEventListener("input", aplicarFiltros);
+}
+
 initLotesButtons();
 
-// ==============================
-// 🔥 MODAL LOTES
-// ==============================
 function criarModal() {
-
     let modal = document.getElementById("modal-lotes");
-
     if (modal) return modal;
 
     modal = document.createElement("div");
@@ -44,17 +39,14 @@ function criarModal() {
 
     document.body.appendChild(modal);
 
-    // 🔥 remove fundo do botão X
     const btnClose = modal.querySelector(".modal-close");
     btnClose.style.background = "none";
     btnClose.style.border = "none";
     btnClose.style.fontSize = "20px";
     btnClose.style.cursor = "pointer";
 
-    // 🔥 trava scroll da página
     document.body.style.overflow = "hidden";
 
-    // fechar
     btnClose.onclick = () => {
         modal.remove();
         document.body.style.overflow = "";
@@ -68,30 +60,20 @@ function criarModal() {
     return modal;
 }
 
-// ==============================
-// BOTÃO LOTES (AGORA MODAL)
-// ==============================
 function initLotesButtons() {
-
     document.querySelectorAll(".product-card").forEach(card => {
-
         const btn = card.querySelector(".btn-lotes");
 
         if (btn) {
-
             btn.onclick = () => {
-
                 const nome = card.querySelector(".product-name").textContent;
 
-                const lotes = Array.from(card.querySelectorAll(".lote-item")).map(l => {
-                    return {
-                        lote: l.querySelector("span").textContent,
-                        qtd: l.querySelector("strong").textContent
-                    };
-                });
+                const lotes = Array.from(card.querySelectorAll(".lote-item")).map(l => ({
+                    lote: l.querySelector("span").textContent,
+                    qtd: l.querySelector("strong").textContent
+                }));
 
                 const modal = criarModal();
-
                 const body = modal.querySelector(".modal-body");
                 const title = modal.querySelector(".modal-title");
 
@@ -142,36 +124,99 @@ function handleFile(e) {
 }
 
 // ==============================
-// FILTROS + BUSCA
+// 🔥 FILTROS + BUSCA + LOTE
 // ==============================
 function aplicarFiltros() {
 
     const busca = searchInput.value.toLowerCase();
     const filtro = filterSelect.value;
+    const qtdLote = Number(loteSearchInput?.value) || 0;
 
-    const filtrados = produtosGlobais.filter(prod => {
+    let resultado = [];
+
+    produtosGlobais.forEach(prod => {
 
         const nome = String(prod.nome).toLowerCase();
         const codigo = String(prod.codigo);
 
         const matchBusca = nome.includes(busca) || codigo.includes(busca);
 
-        let matchFiltro = true;
-
         const saldo = Number(prod.saldo_disponivel) || 0;
 
-        if (filtro === "com") {
-            matchFiltro = saldo > 0;
-        }
-        
-        if (filtro === "sem") {
-            matchFiltro = saldo <= 0;
-        }
+        let matchFiltro = true;
 
-        return matchBusca && matchFiltro;
+        if (filtro === "com") matchFiltro = saldo > 0;
+        if (filtro === "sem") matchFiltro = saldo <= 0;
+
+        // 🔥 FILTRO DE LOTES
+        const lotesValidos = (prod.lotes || []).filter(l =>
+            Number(l.qtd_disponivel) >= qtdLote
+        );
+
+        if (qtdLote > 0) {
+
+            // busca combinada
+            if (matchBusca && matchFiltro && lotesValidos.length > 0) {
+
+                lotesValidos.forEach(l => {
+                    resultado.push({
+                        tipo: "lote",
+                        nome: prod.nome,
+                        codigo: prod.codigo,
+                        lote: l.lote,
+                        qtd: l.qtd_disponivel
+                    });
+                });
+            }
+
+        } else {
+
+            if (matchBusca && matchFiltro) {
+                resultado.push({ tipo: "produto", data: prod });
+            }
+        }
     });
 
-    renderProducts(filtrados);
+    // 🔥 SE NÃO ENCONTROU
+    if (resultado.length === 0) {
+        productsGrid.innerHTML = `<div style="padding:20px; font-size: 19px;">Não foi encontrado nenhum resultado.</div>`;
+        return;
+    }
+
+    // 🔥 RENDER DIFERENTE
+    if (qtdLote > 0) {
+
+        productsGrid.innerHTML = "";
+
+        resultado.forEach(item => {
+
+            const card = document.createElement("div");
+            card.className = "product-card";
+
+            card.innerHTML = `
+                <div class="product-header">
+                    <div>
+                        <h2 class="product-name">${item.nome}</h2>
+                        <span class="product-code">#${item.codigo}</span>
+                    </div>
+                </div>
+
+                <div class="product-stock">
+                    <div class="stock-box highlight" style="display: inline; margin: auto;">
+                        <span style="font-size: 17px; color: black; font-weight: 700; color: #464b53; margin-right: 10px;">Lote: ${item.lote}</span>
+                        <strong style="font-size: 17px; font-weight: 800; margin-left: 10px;">${formatNumber(item.qtd)}</strong>
+                    </div>
+                </div>
+            `;
+
+            productsGrid.appendChild(card);
+        });
+
+        return;
+    }
+
+    // padrão normal
+    renderProducts(resultado.map(r => r.data));
 }
 
 // ==============================
@@ -221,9 +266,36 @@ function renderProducts(produtos) {
 
         const mesesValidos = getMesesValidos();
 
-        const producaoFiltrada = (prod.producao || []).filter(p =>
-            mesesValidos.includes(String(p.mes))
-        );
+        const producaoFiltrada = (prod.producao || []).map(p => {
+
+            let data;
+        
+            if (typeof p.mes === "string") {
+        
+                if (p.mes.includes("-")) {
+                    const [ano, mesNum] = p.mes.split("-");
+                    data = new Date(Number(ano), Number(mesNum) - 1, 1);
+                } else if (p.mes.includes("/")) {
+                    const [mes, ano] = p.mes.split("/");
+                    data = new Date(`${ano}-${mes}-01`);
+                } else {
+                    data = new Date(p.mes);
+                }
+        
+            } else {
+                data = new Date(p.mes);
+            }
+        
+            if (isNaN(data)) return null;
+        
+            const chave = data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0");
+        
+            return {
+                ...p,
+                mesNormalizado: chave
+            };
+        
+        }).filter(p => p && mesesValidos.includes(p.mesNormalizado));
 
         if (producaoFiltrada.length === 0) {
 
@@ -233,7 +305,7 @@ function renderProducts(produtos) {
 
             producaoHTML = mesesValidos.map(mes => {
 
-                const item = producaoFiltrada.find(p => String(p.mes) === mes);
+                const item = producaoFiltrada.find(p => p.mesNormalizado === mes);
 
                 if (!item) {
                     return `<div>${formatMonth(mes)} <strong>Indefinido</strong></div>`;
@@ -270,18 +342,19 @@ function renderProducts(produtos) {
             </div>
 
             <div class="product-stock">
-                <div class="stock-box"><span>Atual</span><strong>${formatNumber(prod.saldo_atual)}</strong></div>
-                <div class="stock-box"><span>Alocado</span><strong>${formatNumber(prod.saldo_alocado)}</strong></div>
+                <div class="stock-box">
+                <strong>Quantidade Disponível</strong>
+                </div>
                 <div class="stock-box highlight">
-                    <span>Disponível</span>
+                    
                     <strong style="color:${corSaldo}">
-                        ${formatNumber(prod.saldo_disponivel)}
+                        ${formatNumber(prod.saldo_disponivel)} m²
                     </strong>
                 </div>
             </div>
 
             <div class="product-production">
-                <span class="section-label">Previsão</span>
+                <span class="section-label">Previsão de produção</span>
                 <div class="production-grid">${producaoHTML}</div>
             </div>
 
@@ -326,12 +399,24 @@ function formatMonth(mes) {
 
         let data;
 
-        if (typeof mes === "string") {
+        // 🔥 NOVO: tratar mês numérico (ex: 4 ou "04")
+        if (!isNaN(mes)) {
+
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mesNumero = Number(mes) - 1; // JS começa em 0
+
+            data = new Date(ano, mesNumero, 1);
+
+        } else if (typeof mes === "string") {
+
             if (mes.includes("-")) {
-                data = new Date(mes + "-01");
+                const [ano, mesNum] = mes.split("-");
+                data = new Date(Number(ano), Number(mesNum) - 1, 1);
             } else {
                 data = new Date(mes);
             }
+
         } else {
             data = new Date(mes);
         }
@@ -343,29 +428,4 @@ function formatMonth(mes) {
     } catch {
         return mes;
     }
-}
-
-window.addEventListener("load", carregarExcelOnline);
-
-function carregarExcelOnline() {
-    fetch("/excel")
-        .then(res => res.arrayBuffer())
-        .then(data => {
-            const workbook = XLSX.read(data, { type: "array" });
-
-            const produtos = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUTOS"]);
-            const lotes = XLSX.utils.sheet_to_json(workbook.Sheets["LOTES"]);
-            const producao = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUCAO"]);
-
-            produtosGlobais = produtos.map(prod => ({
-                ...prod,
-                lotes: lotes.filter(l => l.codigo == prod.codigo),
-                producao: producao.filter(p => p.codigo == prod.codigo)
-            }));
-
-            aplicarFiltros();
-        })
-        .catch(() => {
-            console.log("Nenhum Excel disponível ainda");
-        });
 }
