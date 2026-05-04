@@ -92,8 +92,16 @@ function initLotesButtons() {
     });
 }
 
-// 🔥 CARREGAR AUTOMATICAMENTE AO ABRIR O SITE
 window.addEventListener("DOMContentLoaded", () => {
+
+    const cache = localStorage.getItem("estoque_cache");
+
+    if (cache) {
+        produtosGlobais = JSON.parse(cache);
+        aplicarFiltros();
+    }
+
+    // sempre tenta atualizar do cloud também
     carregarExcelCloud();
 });
 
@@ -114,6 +122,8 @@ function carregarExcelCloud() {
                 lotes: lotes.filter(l => l.codigo == prod.codigo),
                 producao: producao.filter(p => p.codigo == prod.codigo)
             }));
+
+            localStorage.setItem("estoque_cache", JSON.stringify(produtosGlobais));
 
             aplicarFiltros();
         })
