@@ -107,36 +107,29 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function carregarExcelCloud() {
 
-    fetch("https://res.cloudinary.com/diffyouh2/raw/upload/estoque.xlsx?t=" + Date.now(), {
-        cache: "no-store"
-    })
-    .then(res => {
+    fetch("https://res.cloudinary.com/diffyouh2/raw/upload/estoque.xlsx?t=" + Date.now())
+        .then(res => res.arrayBuffer())
+        .then(data => {
 
-        if (!res.ok) {
-            throw new Error("Erro ao baixar Excel: " + res.status);
-        }
+            const workbook = XLSX.read(data, { type: "array" });
 
-        return res.arrayBuffer();
-    })
-    .then(data => {
+            const produtos = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUTOS"]);
+            const lotes = XLSX.utils.sheet_to_json(workbook.Sheets["LOTES"]);
+            const producao = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUCAO"]);
 
-        const workbook = XLSX.read(data, { type: "array" });
+            produtosGlobais = produtos.map(prod => ({
+                ...prod,
+                lotes: lotes.filter(l => l.codigo == prod.codigo),
+                producao: producao.filter(p => p.codigo == prod.codigo)
+            }));
 
-        const produtos = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUTOS"]);
-        const lotes = XLSX.utils.sheet_to_json(workbook.Sheets["LOTES"]);
-        const producao = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUCAO"]);
+            localStorage.setItem("estoque_cache", JSON.stringify(produtosGlobais));
 
-        produtosGlobais = produtos.map(prod => ({
-            ...prod,
-            lotes: lotes.filter(l => l.codigo == prod.codigo),
-            producao: producao.filter(p => p.codigo == prod.codigo)
-        }));
-
-        aplicarFiltros();
-    })
-    .catch(err => {
-        console.error("🔥 ERRO REAL:", err);
-    });
+            aplicarFiltros();
+        })
+        .catch(err => {
+            console.error("Erro ao carregar Excel do Cloud:", err);
+        });
 }
 
 // ==============================
