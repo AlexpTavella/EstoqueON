@@ -92,6 +92,11 @@ function initLotesButtons() {
     });
 }
 
+// 🔥 CARREGAR AUTOMATICAMENTE AO ABRIR O SITE
+window.addEventListener("DOMContentLoaded", () => {
+    carregarExcelCloud();
+});
+
 function carregarExcelCloud() {
 
     fetch("https://res.cloudinary.com/diffyouh2/raw/upload/estoque.xlsx?t=" + Date.now())
