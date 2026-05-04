@@ -92,6 +92,31 @@ function initLotesButtons() {
     });
 }
 
+function carregarExcelCloud() {
+
+    fetch("https://res.cloudinary.com/diffyouh2/raw/upload/estoque.xlsx?t=" + Date.now())
+        .then(res => res.arrayBuffer())
+        .then(data => {
+
+            const workbook = XLSX.read(data, { type: "array" });
+
+            const produtos = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUTOS"]);
+            const lotes = XLSX.utils.sheet_to_json(workbook.Sheets["LOTES"]);
+            const producao = XLSX.utils.sheet_to_json(workbook.Sheets["PRODUCAO"]);
+
+            produtosGlobais = produtos.map(prod => ({
+                ...prod,
+                lotes: lotes.filter(l => l.codigo == prod.codigo),
+                producao: producao.filter(p => p.codigo == prod.codigo)
+            }));
+
+            aplicarFiltros();
+        })
+        .catch(err => {
+            console.error("Erro ao carregar Excel do Cloud:", err);
+        });
+}
+
 // ==============================
 // LER EXCEL
 // ==============================
@@ -429,3 +454,5 @@ function formatMonth(mes) {
         return mes;
     }
 }
+
+
